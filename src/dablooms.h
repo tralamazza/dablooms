@@ -24,11 +24,11 @@ int bitmap_flush(bitmap_t *bitmap);
 
 void free_bitmap(bitmap_t *bitmap);
 
+
 typedef struct {
     uint32_t *count;
     uint32_t *id;
 } counting_bloom_header_t;
-
 
 typedef struct {
     counting_bloom_header_t *header;
@@ -47,7 +47,7 @@ typedef struct {
 
 int free_counting_bloom(counting_bloom_t *bloom);
 counting_bloom_t *new_counting_bloom(unsigned int capacity, double error_rate, const char *filename);
-counting_bloom_t *new_counting_bloom_from_file(unsigned int capacity, double error_rate, const char *filename);
+//counting_bloom_t *new_counting_bloom_from_scale(scaling_bloom_t *bloom, uint32_t id, unsigned int count);
 int counting_bloom_add(counting_bloom_t *bloom, const char *s);
 int counting_bloom_remove(counting_bloom_t *bloom, const char *s);
 int counting_bloom_check(counting_bloom_t *bloom, const char *s);
