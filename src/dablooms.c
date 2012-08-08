@@ -15,11 +15,12 @@
 #include "md5.h"
 #include "dablooms.h"
 
-#define DABLOOMS_VERSION "0.8.1"
+#define DABLOOMS_VERSION "0.8.2"
 
 #define HEADER_BYTES (2*sizeof(uint32_t))
 #define SCALE_HEADER_BYTES (3*sizeof(uint64_t))
 #define SALT_SIZE 16
+#define ERROR_TIGHTENING_RATIO .7
 
 const char *dablooms_version(void)
 {
@@ -143,8 +144,8 @@ int bitmap_increment(bitmap_t *bitmap, unsigned int index, unsigned int offset)
 int bitmap_decrement(bitmap_t *bitmap, unsigned int index, unsigned int offset)
 {
     uint32_t access = index / 2 + offset;
-    uint32_t temp;
-    uint32_t n = bitmap->array[access];
+    uint8_t temp;
+    uint8_t n = bitmap->array[access];
     
     if (index % 2 != 0) {
         temp = (n & 0x0f);
@@ -277,7 +278,7 @@ counting_bloom_t *counting_bloom_init(unsigned int capacity, double error_rate,
     bloom->nfuncs = (int) ceil(log(1 / error_rate) / log(2));
     bloom->counts_per_func = (int) ceil(capacity * fabs(log(error_rate)) / (bloom->nfuncs * pow(log(2), 2)));
     bloom->size = ceil(bloom->nfuncs * bloom->counts_per_func);
-    bloom->num_bytes = (int) ceil(bloom->size / 2 + HEADER_BYTES);
+    bloom->num_bytes = ((bloom->size + 1) / 2) + HEADER_BYTES; /* "+1" causes a rounding-up integer "/2" */
     bloom->hashes = calloc(bloom->nfuncs, sizeof(unsigned int));
     new_salts(bloom);
     
@@ -389,7 +390,7 @@ counting_bloom_t *new_counting_bloom_from_scale(scaling_bloom_t *bloom, uint32_t
     double error_rate;
     counting_bloom_t *cur_bloom;
     
-    error_rate = bloom->error_rate * (pow(.9, bloom->num_blooms + 1));
+    error_rate = bloom->error_rate * (pow(ERROR_TIGHTENING_RATIO, bloom->num_blooms + 1));
     
     if ((bloom->blooms = realloc(bloom->blooms, (bloom->num_blooms + 1) * sizeof(counting_bloom_t *))) == NULL) {
         fprintf(stderr, "Error, could not realloc a new bloom filter\n");
